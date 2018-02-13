@@ -30,7 +30,7 @@ Puppet::Functions.create_function(:consul_data_hash) do
     end
 
     if @options['consul_kv_path'] !~ /^\/v\d\/(kv)\//
-      Puppet.warning("[hiera-consul]: We only support queries to kv and you asked #{consul_kv_path}, skipping")
+      raise ArgumentError, "[hiera-consul]: We only support queries to kv and you asked #{consul_kv_path}"
     end
 
     @consul_kv_path = @options['consul_kv_path']
@@ -126,10 +126,10 @@ Puppet::Functions.create_function(:consul_data_hash) do
       return answer
     end
     unless result.is_a?(Net::HTTPSuccess)
-      Puppet.warning("[hiera-consul]: HTTP response code was #{result.code}")
+      Puppet.debug("[hiera-consul]: HTTP response code was #{result.code}")
       return answer
     end
-    Puppet.warning("[hiera-consul]: Answer was #{result.body}")
+    Puppet.debug("[hiera-consul]: Answer was #{result.body}")
     answer = result.body
     answer
   end
