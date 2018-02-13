@@ -84,7 +84,7 @@ Puppet::Functions.create_function(:consul_data_hash) do
 
   end
 
-  def parse_data(data)
+  def parse_data(answer_text)
     answer_hash = nil
     if @consul_data_format == 'json'
       begin
