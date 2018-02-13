@@ -12,14 +12,6 @@ Puppet::Functions.create_function(:consul_lookup_key) do
 
   def consul_init (options)
 
-    unless options.include?('host')
-      raise ArgumentError, "'consul_lookup_key': 'host' must be declared in Puppet.yaml when using this lookup_key function"
-    end
-
-    unless options.include?('port')
-      raise ArgumentError, "'consul_lookup_key': 'port' must be declared in Puppet.yaml when using this lookup_key function"
-    end
-
     @options = options
     unless @options.include?('host')
       raise ArgumentError, "'consul_lookup_key': 'host' must be declared in Puppet.yaml when using this lookup_key function"
