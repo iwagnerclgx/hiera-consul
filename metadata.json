@@ -1,6 +1,6 @@
 {
   "name": "hiera_consul",
-  "version": "2.0.0",
+  "version": "2.0.0-devel",
   "license": "Apache-2.0",
   "summary": "Module for using Consul as a hiera backend",
   "description": "Use Consul by Hashicorp, as a Hiera 5 backend",
