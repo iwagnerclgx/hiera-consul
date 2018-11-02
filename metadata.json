@@ -1,13 +1,13 @@
 {
   "name": "lynxman-hiera_consul",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "Marc Cluet",
   "license": "Apache-2.0",
   "summary": "Module for using consul as a hiera backend",
   "description": "Use consul by Hashicorp, as a hiera backend",
-  "source": "https://github.com/lynxman/hiera-consul.git",
-  "project_page": "https://forge.puppetlabs.com/lynxman/hiera_consul",
-  "issues_url": "https://github.com/lynxman/hiera-consul/issues",
+  "source": "https://github.com/rmacd/hiera-consul.git",
+  "project_page": "https://forge.puppetlabs.com/rmacd/hiera_consul",
+  "issues_url": "https://github.com/rmacd/hiera-consul/issues",
   "tags": ["consul", "hiera"],
   "operatingsystem_support": [
     {

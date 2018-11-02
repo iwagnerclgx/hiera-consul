@@ -10,15 +10,14 @@ Puppet::Functions.create_function(:consul_lookup_key) do
     param 'Puppet::LookupContext', :context
   end
 
-  def consul_init (options)
-
+  def consul_init_key (options)
     @options = options
     unless @options.include?('host')
-      raise ArgumentError, "'consul_lookup_key': 'host' must be declared in Puppet.yaml when using this lookup_key function"
+      raise ArgumentError, "'consul_lookup_key': 'host' must be declared in hiera.yaml when using this lookup_key function"
     end
 
     unless @options.include?('port')
-      raise ArgumentError, "'consul_lookup_key': 'port' must be declared in Puppet.yaml when using this lookup_key function"
+      raise ArgumentError, "'consul_lookup_key': 'port' must be declared in hiera.yaml when using this lookup_key function"
     end
 
     @consul = Net::HTTP.new(@options['host'], @options['port'])
@@ -29,7 +28,7 @@ Puppet::Functions.create_function(:consul_lookup_key) do
     if @options['use_ssl']
       @consul.use_ssl = true
 
-      if @options['ssl_verify'] == false
+      if !@options['ssl_verify']
         @consul.verify_mode = OpenSSL::SSL::VERIFY_NONE
       else
         @consul.verify_mode = OpenSSL::SSL::VERIFY_PEER
@@ -52,37 +51,39 @@ Puppet::Functions.create_function(:consul_lookup_key) do
 
   def consul_lookup_key(key, options, context)
 
-    return context.cached_value(key) if context.cache_has_key(key)
-
-    consul_init(options)
-    answer = nil
-
-    options['paths'].each do |path|
-
-      Puppet.debug("[hiera-consul]: Lookup Path/key: #{path} #{key}")
-
-      if path.start_with?('::consul_node::')
-        return path
-      end
-
-
-      Puppet.debug("[hiera-consul]: Lookup #{path}/#{key} on #{options['host']}:#{options['port']}")
-      # Check that we are not looking somewhere that will make hiera crash subsequent lookups
-      if "#{path}/#{key}".match('//')
-        Puppet.debug("[hiera-consul]: The specified path #{path}/#{key} is malformed, skipping")
-        next
-      end
-      # We only support querying the catalog or the kv store
-      if path !~ /^\/v\d\/(catalog|kv)\//
-        Puppet.debug("[hiera-consul]: We only support queries to catalog and kv and you asked #{path}, skipping")
-        next
-      end
-      answer = wrapquery("#{path}/#{key}", options)
-      next unless answer
-      break
+    if context.cache_has_key(key)
+      cached_value = context.cached_value(key)
+      Puppet.debug("[hiera-consul]: returning cached value #{cached_value} for #{key}")
+      return cached_value
     end
 
-    return context.not_found() if not answer
+    consul_init_key(options)
+    answer = nil
+
+    uri = options['uri']
+    Puppet.debug("[hiera-consul]: Looking up #{uri}")
+
+    Puppet.debug("[hiera-consul]: Lookup Path/key: #{uri} #{key}")
+
+    if uri.start_with?('::consul_node::')
+      return uri
+    end
+
+
+    Puppet.debug("[hiera-consul]: Lookup #{uri}/#{key} on #{options['host']}:#{options['port']}")
+    # Check that we are not looking somewhere that will make hiera crash subsequent lookups
+    if "#{uri}/#{key}".match('//')
+      Puppet.debug("[hiera-consul]: The specified path #{uri}/#{key} is malformed, skipping")
+      return context.not_found()
+    end
+    # We only support querying the catalog or the kv store
+    if uri !~ /^\/v\d\/(catalog|kv)\//
+      Puppet.debug("[hiera-consul]: We only support queries to catalog and kv and you asked #{uri}, skipping")
+      return context.not_found()
+    end
+    answer = wrap_key_query("#{uri}/#{key}", options)
+
+    return context.not_found() unless answer
     context.cache(key, answer)
   end
 
@@ -115,13 +116,13 @@ Puppet::Functions.create_function(:consul_lookup_key) do
 
   private
 
-  def token(path, options)
+  def key_token(path, options)
     # Token is passed only when querying kv store
     "?token=#{options['token']}" if options['token'] && path =~ /^\/v\d\/kv\//
   end
 
-  def wrapquery(path, options)
-    httpreq = Net::HTTP::Get.new("#{path}#{token(path, options)}")
+  def wrap_key_query(path, options)
+    httpreq = Net::HTTP::Get.new("#{path}#{key_token(path, options)}")
     answer = nil
     begin
       result = @consul.request(httpreq)

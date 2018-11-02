@@ -9,7 +9,7 @@ Puppet::Functions.create_function(:consul_data_hash) do
     param 'Puppet::LookupContext', :context
   end
 
-  def consul_init(options, context)
+  def consul_init_hash(options, context)
     @options = options
     @context = context
 
@@ -44,7 +44,7 @@ Puppet::Functions.create_function(:consul_data_hash) do
     if @options['use_ssl']
       @consul.use_ssl = true
 
-      @consul.verify_mode = if @options['ssl_verify'] == false
+      @consul.verify_mode = if !@options['ssl_verify']
                               OpenSSL::SSL::VERIFY_NONE
                             else
                               OpenSSL::SSL::VERIFY_PEER
@@ -66,16 +66,16 @@ Puppet::Functions.create_function(:consul_data_hash) do
   def consul_data_hash(options, context)
 
     # Init a consul handler, and do some sanity checks
-    consul_init(options, context)
+    consul_init_hash(options, context)
     answer_hash = nil
 
-    answer_text = wrapquery()
-    unless not answer_text
+    answer_text = wrap_hash_query()
+    if answer_text
       answer_hash = parse_data(answer_text)
       context.cache_all(answer_hash) if answer_hash
     end
 
-    unless not answer_hash
+    if answer_hash
       context.cache_all(answer_hash)
       return answer_hash
     end
@@ -105,18 +105,17 @@ Puppet::Functions.create_function(:consul_data_hash) do
     answer_hash
   end
 
-
   private
 
-  def token(path)
+  def hash_token(path)
     # Token is passed only when querying kv store
     "&token=#{@options['token']}" if @options['token'] && path =~ /^\/v\d\/kv\//
   end
 
-  def wrapquery()
+  def wrap_hash_query()
     # Get a raw response, so we don't have to parse
     req_path = "#{@consul_kv_path}?raw"
-    httpreq = Net::HTTP::Get.new("#{req_path}#{token(req_path)}")
+    httpreq = Net::HTTP::Get.new("#{req_path}#{hash_token(req_path)}")
     answer = nil
     begin
       result = @consul.request(httpreq)
